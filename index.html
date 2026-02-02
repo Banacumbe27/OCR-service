@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>OCR Studio</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+</head>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center p-4">
+
+    <div class="w-full max-w-2xl bg-white rounded-2xl shadow-xl overflow-hidden">
+        <div class="p-8">
+            <h1 class="text-2xl font-bold text-slate-800 mb-2">PDF Text Extractor</h1>
+            <p class="text-slate-500 mb-6 text-sm">Upload a PDF to extract text using Tesseract OCR.</p>
+
+            <div id="drop-zone" class="border-2 border-dashed border-slate-200 rounded-xl p-8 text-center hover:border-blue-400 transition-colors cursor-pointer bg-slate-50">
+                <input type="file" id="fileInput" accept=".pdf" class="hidden">
+                <div class="space-y-4" onclick="document.getElementById('fileInput').click()">
+                    <div class="text-4xl">📄</div>
+                    <p class="text-slate-600 font-medium" id="fileNameDisplay">Click to select or drag PDF here</p>
+                </div>
+            </div>
+
+            <button onclick="processOCR()" id="processBtn" class="w-full mt-6 bg-blue-600 text-white py-3 rounded-xl font-semibold hover:bg-blue-700 disabled:bg-slate-300 transition-all">
+                Extract Text
+            </button>
+
+            <div id="status" class="hidden mt-4 text-center">
+                <div class="inline-block animate-spin rounded-full h-5 w-5 border-b-2 border-blue-600 mr-2 align-middle"></div>
+                <span class="text-blue-600 font-medium text-sm">Processing... this may take 10-30 seconds</span>
+            </div>
+        </div>
+
+        <div id="resultArea" class="hidden border-t border-slate-100 bg-slate-50 p-6">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="font-bold text-slate-700">Extracted Content</h3>
+                <button onclick="copyText()" class="text-xs bg-slate-200 px-3 py-1 rounded hover:bg-slate-300 text-slate-600">Copy Text</button>
+            </div>
+            <div id="output" class="bg-white p-4 rounded-lg border border-slate-200 h-80 overflow-y-auto font-mono text-sm whitespace-pre-wrap text-slate-800"></div>
+        </div>
+    </div>
+
+    <script>
+        // REPLACE THIS with your actual Railway URL (e.g., https://ocr-production.up.railway.app)
+        const RAILWAY_URL = "https://ocr-service-production-1bd0.up.railway.app/";
+
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const status = document.getElementById('status');
+        const output = document.getElementById('output');
+        const resultArea = document.getElementById('resultArea');
+        const processBtn = document.getElementById('processBtn');
+
+        fileInput.onchange = () => {
+            if (fileInput.files[0]) fileNameDisplay.innerText = fileInput.files[0].name;
+        };
+
+        async function processOCR() {
+            const file = fileInput.files[0];
+            if (!file) return alert("Please select a file first!");
+
+            // UI Feedback
+            status.classList.remove('hidden');
+            resultArea.classList.add('hidden');
+            processBtn.disabled = true;
+
+            const formData = new FormData();
+            formData.append('file', file);
+
+            try {
+                // We point the fetch to your Railway endpoint
+                const response = await fetch(`${RAILWAY_URL}/extract-text`, {
+                    method: 'POST',
+                    body: formData
+                });
+
+                if (!response.ok) throw new Error('OCR failed on server');
+
+                const data = await response.json();
+                output.innerText = data.text;
+                resultArea.classList.remove('hidden');
+            } catch (err) {
+                alert("Error: " + err.message);
+            } finally {
+                status.classList.add('hidden');
+                processBtn.disabled = false;
+            }
+        }
+
+        function copyText() {
+            navigator.clipboard.writeText(output.innerText);
+            alert("Copied to clipboard!");
+        }
+    </script>
+</body>
+</html>

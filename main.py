@@ -1,9 +1,17 @@
 from fastapi import FastAPI, UploadFile, File, HTTPException
 import pytesseract
+from fastapi.middleware.cors import CORSMiddleware
 from pdf2image import convert_from_bytes
 import io
 
 app = FastAPI()
+app.add_middleware(
+    CORSMiddleware,
+    allow_origins=["*"],      # Allows all websites (Change this to your specific frontend URL later for security)
+    allow_credentials=True,
+    allow_methods=["*"],      # Allows all methods (GET, POST, etc.)
+    allow_headers=["*"],      # Allows all headers
+)
 pytesseract.pytesseract.tesseract_cmd = r'/usr/bin/tesseract'
 # Remove 'async' so FastAPI handles this in a thread pool
 @app.post("/extract-text")
